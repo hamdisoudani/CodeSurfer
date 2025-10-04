@@ -1,0 +1,32 @@
+# Core gRPC and Protobuf
+grpcio
+grpcio-tools
+protobuf
+googleapis-common-protos
+
+# NATS client
+nats-py
+
+# Utilities
+python-dotenv
+pydantic
+tenacity
+loguru
+
+# Optional (Linux only): faster event loop
+# uvloop==0.20.0
+
+# LlamaIndex core + NVIDIA integrations + Chroma vector store
+llama-index-core
+llama-index-embeddings-nvidia
+llama-index-llms-nvidia
+llama-index-vector-stores-chroma
+
+# Chroma client (must align with llama-index-vector-stores-chroma)
+chromadb
+
+langchain_nvidia_ai_endpoints
+
+
+# Github Git
+GitPython

@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package indexer;
+
+service IndexerService {
+  // Start indexing a repository
+  rpc StartIndexing(StartIndexingRequest) returns (StartIndexingResponse);
+  
+  // Get indexing status
+  rpc GetIndexingStatus(GetStatusRequest) returns (GetStatusResponse);
+  
+  // Cancel indexing job
+  rpc CancelIndexing(CancelIndexingRequest) returns (CancelIndexingResponse);
+  
+  // Search indexed content
+  rpc SearchRepository(SearchRequest) returns (SearchResponse);
+}
+
+// Request/Response messages
+message StartIndexingRequest {
+  string workspace_id = 1;
+  string user_id = 2;
+  string installation_id = 3;
+  string repo = 4;
+  string branch = 5;
+  string type = 6; // 'full' | 'incremental'
+  optional string commit_sha = 7;
+}
+
+message StartIndexingResponse {
+  string job_id = 1;
+  string status = 2;
+  string message = 3;
+}
+
+message GetStatusRequest {
+  string workspace_id = 1;
+  optional string job_id = 2;
+}
+
+message GetStatusResponse {
+  string status = 1; // 'pending' | 'building' | 'ready' | 'failed'
+  int32 progress = 2; // 0-100
+  string phase = 3; // 'cloning' | 'parsing' | 'embedding' | 'persisting'
+  optional string error = 4;
+  optional string last_indexed_at = 5;
+  optional string commit_sha = 6;
+}
+
+message CancelIndexingRequest {
+  string job_id = 1;
+  string workspace_id = 2;
+}
+
+message CancelIndexingResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message SearchRequest {
+  string workspace_id = 1;
+  string query = 2;
+  optional int32 limit = 3;
+  optional double similarity_threshold = 4;
+}
+
+message SearchResponse {
+  repeated SearchResult results = 1;
+  int32 total_results = 2;
+}
+
+message SearchResult {
+  string content = 1;
+  string file_path = 2;
+  int32 line_start = 3;
+  int32 line_end = 4;
+  double similarity_score = 5;
+  map<string, string> metadata = 6;
+}
+
+

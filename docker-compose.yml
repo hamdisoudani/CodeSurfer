@@ -1,0 +1,172 @@
+# CodeSurf Docker Compose Configuration
+
+services:
+  # Infrastructure Services
+  redis:
+    image: redis:7-alpine
+    container_name: codesurf-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - codesurf-network
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: codesurf-nats
+    restart: unless-stopped
+    command: ["-js", "-m", "8222"]
+    networks:
+      - codesurf-network
+
+  chroma:
+    image: ghcr.io/chroma-core/chroma:latest
+    container_name: codesurf-chroma
+    restart: unless-stopped
+    volumes:
+      - chroma_data:/data
+    environment:
+      - CHROMA_HOST=0.0.0.0
+      - CHROMA_PORT=8000
+    ports:
+      - "8000:8000"
+    networks:
+      - codesurf-network
+
+  # Application Services
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: codesurf-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=production
+      - BACKEND_PORT=3001
+      - NATS_URL=nats://nats:4222
+      - INDEXER_GRPC_URL=indexer:50051
+    depends_on:
+      - redis
+      - nats
+      - chroma
+      - indexer
+    networks:
+      - codesurf-network
+
+  # OLD NestJS indexer (commented out)
+  # indexer-nestjs:
+  #   build:
+  #     context: ./indexer-micro-service
+  #     dockerfile: Dockerfile
+  #     target: production
+  #   container_name: codesurf-indexer-nestjs
+  #   restart: unless-stopped
+  #   env_file:
+  #     - ./backend/.env
+  #   environment:
+  #     - NODE_ENV=${NODE_ENV:-production}
+  #     - NATS_URL=nats://nats:4222
+  #     - REDIS_URL=redis://redis:6379
+  #     - CHROMA_URL=http://chroma:8000
+  #     - BACKEND_GRPC_URL=backend:50052
+  #   depends_on:
+  #     - redis
+  #     - nats
+  #     - chroma
+  #   networks:
+  #     - codesurf-network
+
+  # NEW Python indexer
+  indexer:
+    build:
+      context: .
+      dockerfile: ./python-indexer-micro-service/Dockerfile
+    container_name: codesurf-indexer-python
+    restart: unless-stopped
+    env_file:
+      - ./python-indexer-micro-service/.env
+    environment:
+      - NATS_URL=nats://nats:4222
+      - CHROMA_URL=http://chroma:8000
+      - BACKEND_GRPC_URL=backend:50052
+      - WORK_DIR=/tmp/indexer
+      - LOG_LEVEL=INFO
+    depends_on:
+      - redis
+      - nats
+      - chroma
+    networks:
+      - codesurf-network
+
+  agent:
+    build:
+      context: ./agent
+      dockerfile: Dockerfile
+      target: production
+    container_name: codesurf-agent
+    restart: unless-stopped
+    ports:
+      - "2024:2024"  # LangGraph runs on 2024 by default
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=production
+      - BACKEND_URL=http://backend:3001
+      - BACKEND_GRPC_URL=backend:50052
+      - INDEXER_GRPC_URL=indexer:50051
+    depends_on:
+      - backend
+      - indexer
+    networks:
+      - codesurf-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    container_name: codesurf-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./frontend/.env
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
+      - NEXT_PUBLIC_AGENT_URL=http://localhost:2024
+      - NEXT_PUBLIC_LANGGRAPH_API_URL=http://localhost:2024
+      - LANGGRAPH_INTERNAL_URL=http://agent:2024
+      - BACKEND_INTERNAL_URL=http://backend:3001
+    depends_on:
+      - backend
+      - agent
+    networks:
+      - codesurf-network
+
+# Networks
+networks:
+  codesurf-network:
+    driver: bridge
+    name: codesurf-network
+
+# Volumes for data persistence
+volumes:
+  redis_data:
+    name: codesurf-redis-data
+  chroma_data:
+    name: codesurf-chroma-data
+  backend_node_modules:
+    name: codesurf-backend-node-modules
+  frontend_node_modules:
+    name: codesurf-frontend-node-modules
+  frontend_next_cache:
+    name: codesurf-frontend-next-cache
+  agent_node_modules:
+    name: codesurf-agent-node-modules
+  agent_dist:
+    name: codesurf-agent-dist

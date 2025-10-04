@@ -1,0 +1,92 @@
+services:
+  backend:
+    build:
+      target: development
+    user: root
+    volumes:
+      - ./backend:/app:cached
+      - backend_node_modules:/app/node_modules
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=development
+      - BACKEND_PORT=3001
+      - FRONTEND_ORIGIN=http://localhost:3000
+      - NATS_URL=nats://nats:4222
+      - CHOKIDAR_USEPOLLING=1
+      - REDIS_URL=redis://redis:6379
+
+  # OLD NestJS indexer (commented out)
+  # indexer-nestjs:
+  #   build:
+  #     target: development
+  #   user: root
+  #   env_file:
+  #     - ./indexer-micro-service/.env
+  #   volumes:
+  #     - ./indexer-micro-service:/app:cached
+  #     - /app/node_modules
+  #   environment:
+  #     - NODE_ENV=development
+  #     - CHOKIDAR_USEPOLLING=1
+
+  # NEW Python indexer
+  indexer:
+    build:
+      context: .
+      dockerfile: ./python-indexer-micro-service/Dockerfile
+      target: development
+    user: root
+    env_file:
+      - ./python-indexer-micro-service/.env
+    volumes:
+      # Mount the source code. The generated stubs are in /app/generated
+      # and are NOT overwritten by this mount, solving the problem.
+      - ./python-indexer-micro-service/src:/app/src:cached
+    environment:
+      - NATS_URL=nats://nats:4222
+      - CHROMA_URL=http://chroma:8000
+      - BACKEND_GRPC_URL=backend:50052
+      - WORK_DIR=/tmp/indexer
+      - LOG_LEVEL=DEBUG
+      # PYTHONPATH is now set in the Dockerfile
+
+  frontend:
+    build:
+      target: development
+    user: root
+    read_only: true
+    volumes:
+      - ./frontend:/app:ro,cached
+      - frontend_node_modules:/app/node_modules
+      - frontend_next_cache:/app/.next
+    env_file:
+      - ./frontend/.env
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_AGENT_URL=http://localhost:2024
+      - NEXT_PUBLIC_LANGGRAPH_API_URL=http://localhost:2024
+      - LANGGRAPH_INTERNAL_URL=http://agent:2024
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=1
+      - NEXT_TELEMETRY_DISABLED=1
+      - BACKEND_INTERNAL_URL=http://backend:3001
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  agent:
+    build:
+      target: development
+    user: root
+    volumes:
+      - ./agent:/app:cached
+      - agent_node_modules:/app/node_modules
+      - agent_dist:/app/dist
+    environment:
+      - NODE_ENV=development
+      - LANGCHAIN_TRACING_V2=false

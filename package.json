@@ -1,0 +1,29 @@
+{
+  "name": "codesurf-workspace",
+  "scripts": {
+    "install:all": "npm run install:backend && npm run install:frontend && npm run install:indexer && npm run install:agent",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "install:indexer": "cd indexer-micro-service && npm install",
+    "install:agent": "cd agent && npm install",
+    "proto:gen:python": "node -e \"require('fs').mkdirSync('python-indexer-micro-service/src/generated', { recursive: true })\" && python -m grpc_tools.protoc -I python-indexer-micro-service/proto --python_out=python-indexer-micro-service/src/generated --grpc_python_out=python-indexer-micro-service/src/generated python-indexer-micro-service/proto/backend.proto",
+    "proto:gen:backend": "cd backend && npm run proto:gen:ts",
+    "proto:gen:agent": "cd agent && npm run proto:gen",
+    "proto:gen:all": "npm run proto:gen:python && npm run proto:gen:backend && npm run proto:gen:agent",
+    "docker:install:backend": "docker-compose exec backend npm install",
+    "docker:install:indexer": "docker-compose exec indexer npm install",
+    "docker:build": "docker-compose build",
+    "docker:build:prod": "docker-compose -f docker-compose.yml build",
+    "docker:up:prod": "docker-compose -f docker-compose.yml up -d",
+    "docker:down:prod": "docker-compose -f docker-compose.yml down",
+    "docker:build:dev": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml build",
+    "docker:up:dev": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d",
+    "docker:down:dev": "docker-compose -f docker-compose.yml -f docker-compose.dev.yml down",
+    "docker:fresh": "docker-compose down && docker-compose build && docker-compose up -d",
+    "dev": "npm run docker:up:dev",
+    "dev:logs": "docker-compose logs -f",
+    "dev:down": "npm run docker:down:dev",
+    "watch:packages": "node scripts/watch-packages.js",
+    "docker:clean": "docker system prune -a --volumes"
+  }
+}

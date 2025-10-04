@@ -1,0 +1,40 @@
+{
+  "name": "langgraphjs-studio-starter",
+  "packageManager": "yarn@1.22.22",
+  "scripts": {
+    "build": "tsc",
+    "start": "npx --yes @langchain/langgraph-cli start --host 0.0.0.0 --port 2024 --no-browser",
+    "dev": "npx --yes @langchain/langgraph-cli dev --host 0.0.0.0 --port 2024 --no-browser",
+    "proto:gen": "rimraf src/generated && mkdirp src/generated && protoc --ts_proto_out=src/generated -I ./proto ./proto/backend.proto"
+  },
+  "dependencies": {
+    "@daytonaio/sdk": "^0.27.1",
+    "@langchain/community": "^0.3.56",
+    "@langchain/core": "^0.3.76",
+    "@langchain/groq": "^0.2.4",
+    "@langchain/langgraph": "0.4.9",
+    "@langchain/langgraph-checkpoint": "0.1.1",
+    "@langchain/langgraph-sdk": "^0.1.6",
+    "@langchain/openai": "^0.6.12",
+    "@types/jsonwebtoken": "^9.0.10",
+    "deepagents": "^0.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "langsmith": "^0.3.68",
+    "npm-check-updates": "^18.1.1",
+    "octokit": "^5.0.3",
+    "ws": "^8.18.3",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.24.6"
+  },
+  "devDependencies": {
+    "@grpc/grpc-js": "^1.14.0",
+    "@grpc/proto-loader": "^0.8.0",
+    "@tsconfig/recommended": "^1.0.10",
+    "@types/google-protobuf": "^3.15.12",
+    "google-protobuf": "^4.0.0",
+    "mkdirp": "^3.0.1",
+    "rimraf": "^6.0.1",
+    "ts-proto": "^2.4.0",
+    "typescript": "^5.9.2"
+  }
+}

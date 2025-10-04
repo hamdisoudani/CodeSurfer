@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package backend;
+
+service BackendService {
+  // Get GitHub installation access token
+  rpc GetGitHubToken(GetGitHubTokenRequest) returns (GetGitHubTokenResponse);
+  
+  // Update workspace indexing status
+  rpc UpdateWorkspaceStatus(UpdateWorkspaceStatusRequest) returns (UpdateWorkspaceStatusResponse);
+
+  // Agent authentication and context retrieval
+  rpc AuthenticateAgent(AuthenticateAgentRequest) returns (AuthenticateAgentResponse);
+
+  // Query workspace repository 
+  rpc QueryWorkspace(QueryWorkspaceRequest) returns (QueryWorkspaceResponse);
+}
+
+// Request/Response messages
+message GetGitHubTokenRequest {
+  string installation_id = 1;
+  string workspace_id = 2;
+  string repo = 3;
+  repeated string repositories = 4;
+}
+
+message GetGitHubTokenResponse {
+  string token = 1;
+  string expires_at = 2;
+  bool success = 3;
+  optional string error = 4;
+}
+
+message UpdateWorkspaceStatusRequest {
+  string workspace_id = 1;
+  string status = 2; // 'pending' | 'building' | 'ready' | 'failed'
+  optional int32 progress = 3;
+  optional string phase = 4;
+  optional string error = 5;
+  optional string last_indexed_at = 6;
+  optional string commit_sha = 7;
+}
+
+message UpdateWorkspaceStatusResponse {
+  bool success = 1;
+  optional string message = 2;
+}
+
+// Agent authentication messages
+message AuthenticateAgentRequest {
+  string jwt_token = 1;
+  optional string workspace_id = 2;
+}
+
+message AuthenticateAgentResponse {
+  bool success = 1;
+  optional string error = 2;
+  optional WorkspaceContext workspace_context = 3;
+  optional UserContext user_context = 4;
+}
+
+message UserContext {
+  string user_id = 1;
+  string email = 2;
+  string username = 3;
+}
+
+message WorkspaceContext {
+  string workspace_id = 1;
+  string repo = 2;
+  string branch = 3;
+  string installation_id = 4;
+  string index_status = 5; // 'pending' | 'building' | 'ready' | 'failed'
+  optional string last_indexed_at = 6;
+  optional string last_commit_sha = 7;
+  bool is_indexed = 8;
+}
+
+// Workspace query messages
+message QueryWorkspaceRequest {
+  string workspace_id = 1;
+  string query = 2;
+  optional int32 limit = 3; // Default 10
+  optional float similarity_threshold = 4; // Default 0.7
+}
+
+message QueryWorkspaceResponse {
+  bool success = 1;
+  optional string error = 2;
+  repeated SearchResult results = 3;
+}
+
+message SearchResult {
+  string content = 1;
+  string file_path = 2;
+  optional int32 start_line = 3;
+  optional int32 end_line = 4;
+  float similarity_score = 5;
+  optional string chunk_id = 6;
+}
